@@ -1,0 +1,3 @@
+{
+  "prettier": "prettier \"**/*.{css,html,ts,js,java}\" --plugin=prettier-plugin-java"
+}

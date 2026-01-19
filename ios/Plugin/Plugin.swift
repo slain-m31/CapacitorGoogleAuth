@@ -94,12 +94,17 @@ public class GoogleAuth: CAPPlugin {
                     return;
                 }
                 let googleSignInConfiguration = GIDConfiguration.init(clientID: clientId, serverClientID: serverClientId)
-                self.googleSignIn.signIn(with: googleSignInConfiguration, presenting: presentingVc, hint: nil, additionalScopes: additionalScopes) { user, error in
+                self.googleSignIn.configuration = googleSignInConfiguration
+                self.googleSignIn.signIn(withPresenting: presentingVc, hint: nil, additionalScopes: additionalScopes, nonce: nil) { result, error in
                     if let error = error {
                         self.signInCall?.reject(error.localizedDescription, "\(error._code)");
                         return;
                     }
-                    self.resolveSignInCallWith(user: user!);
+                    guard let user = result?.user else {
+                        self.signInCall?.reject("No user in result");
+                        return;
+                    }
+                    self.resolveSignInCallWith(user: user);
                 };
             }
         }

@@ -19,11 +19,11 @@ public class GoogleAuth: CAPPlugin {
         customScopes: [String]
     ) {
         googleSignIn = GIDSignIn.sharedInstance;
-        
+
         let serverClientId = getServerClientIdValue();
 
         googleSignInConfiguration = GIDConfiguration.init(clientID: customClientId, serverClientID: serverClientId)
-        
+
         // these are scopes granted by default by the signIn method
         let defaultGrantedScopes = ["email", "profile", "openid"];
         // these are scopes we will need to request after sign in
@@ -36,7 +36,7 @@ public class GoogleAuth: CAPPlugin {
         NotificationCenter.default.addObserver(self, selector: #selector(handleOpenUrl(_ :)), name: Notification.Name(Notification.Name.capacitorOpenURL.rawValue), object: nil);
     }
 
-    
+
     public override func load() {
     }
 
@@ -58,7 +58,7 @@ public class GoogleAuth: CAPPlugin {
         forceAuthCode = call.getBool("grantOfflineAccess") ?? (
             getConfigValue("forceCodeForRefreshToken") as? Bool ?? false
         );
-        
+
         // load client
         self.loadSignInClient(
             customClientId: clientId,
@@ -70,8 +70,7 @@ public class GoogleAuth: CAPPlugin {
     @objc
     func signIn(_ call: CAPPluginCall) {
         signInCall = call;
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.main.async {
             if self.googleSignIn.hasPreviousSignIn() && !self.forceAuthCode {
                 self.googleSignIn.restorePreviousSignIn() { user, error in
                 if let error = error {
@@ -108,8 +107,7 @@ public class GoogleAuth: CAPPlugin {
 
     @objc
     func refresh(_ call: CAPPluginCall) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.main.async {
             guard let currentUser = self.googleSignIn.currentUser else {
                 call.reject("User not logged in.");
                 return
@@ -131,8 +129,7 @@ public class GoogleAuth: CAPPlugin {
 
     @objc
     func signOut(_ call: CAPPluginCall) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.main.async {
             if self.googleSignIn != nil {
                 self.googleSignIn.signOut();
             }
@@ -152,8 +149,8 @@ public class GoogleAuth: CAPPlugin {
         }
         googleSignIn.handle(url);
     }
-    
-    
+
+
     func getClientIdValue() -> String? {
         if let clientId = getConfig().getString("iosClientId") {
             return clientId;
@@ -168,7 +165,7 @@ public class GoogleAuth: CAPPlugin {
         }
         return nil;
     }
-    
+
     func getServerClientIdValue() -> String? {
         if let serverClientId = getConfig().getString("serverClientId") {
             return serverClientId;
@@ -183,7 +180,6 @@ public class GoogleAuth: CAPPlugin {
                 "idToken": user.idToken?.tokenString ?? NSNull(),
                 "refreshToken": user.refreshToken.tokenString
             ],
-            "serverAuthCode": user.serverAuthCode ?? NSNull(),
             "email": user.profile?.email ?? NSNull(),
             "familyName": user.profile?.familyName ?? NSNull(),
             "givenName": user.profile?.givenName ?? NSNull(),

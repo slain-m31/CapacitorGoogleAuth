@@ -70,7 +70,8 @@ public class GoogleAuth: CAPPlugin {
     @objc
     func signIn(_ call: CAPPluginCall) {
         signInCall = call;
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             if self.googleSignIn.hasPreviousSignIn() && !self.forceAuthCode {
                 self.googleSignIn.restorePreviousSignIn() { user, error in
                 if let error = error {
@@ -107,20 +108,21 @@ public class GoogleAuth: CAPPlugin {
 
     @objc
     func refresh(_ call: CAPPluginCall) {
-        DispatchQueue.main.async {
-            if self.googleSignIn.currentUser == nil {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard let currentUser = self.googleSignIn.currentUser else {
                 call.reject("User not logged in.");
                 return
             }
-            self.googleSignIn.currentUser!.authentication.do { (authentication, error) in
-                guard let authentication = authentication else {
+            currentUser.refreshTokensIfNeeded { user, error in
+                guard let user = user else {
                     call.reject(error?.localizedDescription ?? "Something went wrong.");
                     return;
                 }
                 let authenticationData: [String: Any] = [
-                    "accessToken": authentication.accessToken,
-                    "idToken": authentication.idToken ?? NSNull(),
-                    "refreshToken": authentication.refreshToken
+                    "accessToken": user.accessToken.tokenString,
+                    "idToken": user.idToken?.tokenString ?? NSNull(),
+                    "refreshToken": user.refreshToken.tokenString
                 ]
                 call.resolve(authenticationData);
             }
@@ -129,7 +131,8 @@ public class GoogleAuth: CAPPlugin {
 
     @objc
     func signOut(_ call: CAPPluginCall) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             if self.googleSignIn != nil {
                 self.googleSignIn.signOut();
             }
@@ -176,9 +179,9 @@ public class GoogleAuth: CAPPlugin {
     func resolveSignInCallWith(user: GIDGoogleUser) {
         var userData: [String: Any] = [
             "authentication": [
-                "accessToken": user.authentication.accessToken,
-                "idToken": user.authentication.idToken,
-                "refreshToken": user.authentication.refreshToken
+                "accessToken": user.accessToken.tokenString,
+                "idToken": user.idToken?.tokenString ?? NSNull(),
+                "refreshToken": user.refreshToken.tokenString
             ],
             "serverAuthCode": user.serverAuthCode ?? NSNull(),
             "email": user.profile?.email ?? NSNull(),
